@@ -1,0 +1,22 @@
+graph_id: translate_news
+description: "海外ニュースから日本未報道を検出し翻訳するワークフロー"
+nodes:
+  - id: rss_reader_intl
+    type: RSSReaderAgent
+    inputs:
+      feed_urls:
+        - https://rss.nytimes.com/services/xml/rss/nyt/World.xml
+  - id: rss_reader_jp
+    type: RSSReaderAgent
+    inputs:
+      feed_urls:
+        - https://news.yahoo.co.jp/rss/topics/top-picks.xml
+  - id: diff_detector
+    type: DiffDetectorAgent
+    inputs:
+      jp_articles: rss_reader_jp.output
+      intl_articles: rss_reader_intl.output
+  - id: translator
+    type: TranslatorAgent
+    inputs:
+      articles: diff_detector.output

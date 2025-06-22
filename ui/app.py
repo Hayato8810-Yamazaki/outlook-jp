@@ -1,27 +1,50 @@
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import streamlit as st
-import requests
-import streamlit.components.v1 as components
+from tools.graph_loader import load_graph_from_yaml
+from pathlib import Path
+import yaml
 
-# ページ設定
-st.set_page_config(page_title="Outlook JP", layout="centered")
+# ✅ 型変換用
+from schemas.translation_schema import TranslationResult
 
-st.title("🗞 Outlook JP - ニュース翻訳")
-topic = st.text_input("翻訳したいニューストピックを入力してください（例: AI, climate, politics）")
+st.set_page_config(page_title="News Translation Graph", layout="wide")
+st.title("📰 海外ニュース翻訳ワークフロー")
 
-if st.button("翻訳する") and topic:
-    with st.spinner("翻訳中..."):
+# YAML ファイルの選択
+yaml_files = list(Path(".").glob("*.yaml"))
+yaml_options = [f.name for f in yaml_files]
+
+selected_yaml = st.selectbox("実行するGraph YAMLを選択してください", yaml_options)
+
+# YAML 内容プレビュー
+if selected_yaml:
+    with open(selected_yaml, "r") as f:
+        content = f.read()
+    with st.expander("📄 YAML プレビュー", expanded=False):
+        st.code(content, language="yaml")
+
+# 実行ボタン
+if st.button("▶️ 実行開始"):
+    with st.spinner("Graph 実行中..."):
+        graph = load_graph_from_yaml(selected_yaml)
         try:
-            response = requests.get("http://localhost:8000/translate_news", params={"topic": topic})
-            data = response.json()
+            results = graph.run()
 
-            # HTMLテンプレート読み込み
-            with open("templates/ui.html", encoding="utf-8") as f:
-                html = f.read()
-                html = html.replace("{{original}}", data["original"])
-                html = html.replace("{{translated}}", data["translated"])
+            # ✅ dict → TranslationResult に変換（必要な場合のみ）
+            results = [TranslationResult(**r) if isinstance(r, dict) else r for r in results]
 
-            # 描画
-            components.html(html, height=600, scrolling=True)
+            st.success("✅ 実行完了")
+
+            # 結果表示
+            for idx, r in enumerate(results, 1):
+                with st.container():
+                    st.markdown(f"**{idx}. {r.original.title}**")
+                    st.markdown(f"🈁 翻訳: {r.translated_title}")
+                    st.markdown("---")
 
         except Exception as e:
-            st.error(f"エラー: {e}")
+            st.error(f"❌ エラーが発生しました: {str(e)}")

@@ -1,7 +1,33 @@
+# Web アプリ & API 関連
 fastapi
 uvicorn
-openai
-httpx
-python-dotenv
+
+# UI
 streamlit
+
+# HTTP 通信
+httpx
 requests
+
+# 環境変数管理
+python-dotenv
+
+# OpenAI API
+openai>=1.0.0  # v1系以降を明記（旧版の破壊的変更に注意）
+
+# スケジューラ
+schedule  # または apscheduler を使いたい場合はこちらに変更
+
+# 類似度計算（将来的なクラスタリングやRAGに役立つ）
+scikit-learn
+
+# JSON構造の厳密なバリデーション用（任意）
+pydantic
+
+# （将来）RAG構成向け（ChromaDBを使う場合）
+# chromadb
+
+# 日本語処理に便利な場合（翻訳精度を上げたい場合など）
+# fugashi
+# unidic-lite
+scikit-learn
