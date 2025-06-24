@@ -30,4 +30,5 @@ pydantic
 # 日本語処理に便利な場合（翻訳精度を上げたい場合など）
 # fugashi
 # unidic-lite
-scikit-learn
+
+numpy

@@ -1,36 +1,41 @@
-from typing import Any, List, Dict
+from typing import List
 from agents.base_agent import BaseAgent
-from tools.similarity import calculate_similarity
+from schemas.rss_schema import Article
+from schemas.diff_schema import DiffResult
+from tools.embedding_utils import translate_to_english, get_embedding, cosine_similarity
 
 class DiffDetectorAgent(BaseAgent):
-    def __init__(self, jp_articles: List[Dict], intl_articles: List[Dict]):
-        """
-        :param jp_articles: 日本のRSS記事のリスト（例：{'title': '...', 'description': '...'}）
-        :param intl_articles: 海外のRSS記事のリスト
-        """
+    def __init__(self, jp_articles: List[Article], intl_articles: List[Article]):
         self.jp_articles = jp_articles
         self.intl_articles = intl_articles
 
-    def run(self, input_data: Any = None) -> List[Dict]:
-        """
-        日本には存在しない（類似記事がない）海外ニュースを検出して返す
-        """
+    def run(self, input_data=None) -> List[DiffResult]:
         diff_articles = []
-
         for intl_article in self.intl_articles:
-            intl_text = f"{intl_article.get('title', '')} {intl_article.get('description', '')}"
-            if not self._is_similar_to_any_jp(intl_text):
-                diff_articles.append(intl_article)
-
+            if not self._has_similar(intl_article):
+                diff_articles.append(
+                    DiffResult(
+                        title=intl_article.title,
+                        description=intl_article.description if intl_article.description is not None else None,
+                        link=intl_article.link,
+                        missing_in_japan=True
+                    )
+                )
         return diff_articles
 
-    def _is_similar_to_any_jp(self, intl_text: str, threshold: float = 0.3) -> bool:
-        """
-        類似度で日本記事と比較し、閾値以上なら「類似している」とみなす
-        """
+    def _has_similar(self, intl_article: Article) -> bool:
+        # タイトル + 説明を比較対象に
+        intl_text = f"{intl_article.title} {intl_article.description or ''}"
+        intl_text_en = translate_to_english(intl_text)
+        intl_emb = get_embedding(intl_text_en)
+
         for jp_article in self.jp_articles:
-            jp_text = f"{jp_article.get('title', '')} {jp_article.get('description', '')}"
-            similarity = calculate_similarity(intl_text, jp_text)
-            if similarity >= threshold:
+            jp_text = f"{jp_article.title} {jp_article.description or ''}"
+            jp_text_en = translate_to_english(jp_text)
+            jp_emb = get_embedding(jp_text_en)
+
+            similarity = cosine_similarity(intl_emb, jp_emb)
+            if similarity > 0.7:  # 類似と見なす閾値
                 return True
+
         return False

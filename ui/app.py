@@ -27,16 +27,10 @@ if selected_yaml:
     with st.expander("📄 YAML プレビュー", expanded=False):
         st.code(content, language="yaml")
 
-# 実行ボタン
 if st.button("▶️ 実行開始"):
     with st.spinner("Graph 実行中..."):
-        graph = load_graph_from_yaml(selected_yaml)
         try:
-            results = graph.run()
-
-            # ✅ dict → TranslationResult に変換（必要な場合のみ）
-            results = [TranslationResult(**r) if isinstance(r, dict) else r for r in results]
-
+            results = load_graph_from_yaml(selected_yaml)
             st.success("✅ 実行完了")
 
             # 結果表示
